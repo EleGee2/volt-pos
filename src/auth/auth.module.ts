@@ -4,12 +4,14 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { InvitationsModule } from '../invitations/invitations.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     UsersModule,
+    InvitationsModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'changeme-jwt-secret',

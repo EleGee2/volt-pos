@@ -13,6 +13,8 @@ import { SignupDto } from './dto/signup.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { InvitationsService } from '../invitations/invitations.service';
+import { AcceptInvitationDto } from '../invitations/dto/accept-invitation.dto';
 
 type SafeUser = Omit<User, 'passwordHash' | 'pinHash'>;
 
@@ -29,6 +31,7 @@ export class AuthService {
     private usersService: UsersService,
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private invitationsService: InvitationsService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -223,6 +226,11 @@ export class AuthService {
     });
 
     return { success: true, message: 'Password has been successfully reset.' };
+  }
+
+  async acceptInvitation(dto: AcceptInvitationDto) {
+    const user = await this.invitationsService.accept(dto);
+    return this.login(user);
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {

@@ -6,12 +6,17 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   Request,
   UseGuards,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { AssignUserDto } from './dto/assign-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -31,7 +36,7 @@ export class LocationsController {
 
   @Get(':id')
   @Roles(Role.CASHIER)
-  async findOne(@Param('id') id: string, @Request() req: any) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     const data = await this.locationsService.findOne(
       id,
       req.user.organizationId,
@@ -72,5 +77,59 @@ export class LocationsController {
       req.user.organizationId,
     );
     return { message: 'Location deactivated successfully', data };
+  }
+
+  // ─── User Assignment ──────────────────────────────────────────────────────
+
+  @Get(':id/users')
+  @Roles(Role.CASHIER)
+  async getLocationUsers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '50',
+    @Request() req: any,
+  ) {
+    const result = await this.locationsService.getLocationUsers(
+      id,
+      req.user.organizationId,
+      parseInt(page),
+      parseInt(limit),
+    );
+    return { message: 'Location users retrieved successfully', ...result };
+  }
+
+  @Post(':id/users')
+  @Roles(Role.MANAGER)
+  async assignUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignUserDto,
+    @Request() req: any,
+  ) {
+    const data = await this.locationsService.assignUser(
+      id,
+      req.user.organizationId,
+      req.user.id,
+      req.user.role,
+      dto.userId,
+    );
+    return { message: 'User assigned to location successfully', data };
+  }
+
+  @Delete(':id/users/:userId')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  async unassignUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Request() req: any,
+  ) {
+    const data = await this.locationsService.unassignUser(
+      id,
+      req.user.organizationId,
+      req.user.id,
+      req.user.role,
+      userId,
+    );
+    return { message: 'User unassigned from location successfully', data };
   }
 }

@@ -64,6 +64,7 @@ model Organization {
   sales                Sale[]
   locations            Location[]
   users                User[]
+  invitations          UserInvitation[]
 
   @@map("organizations")
 }
@@ -88,6 +89,8 @@ model Location {
   organization    Organization     @relation(fields: [organizationId], references: [id])
   inventoryLevels InventoryLevel[]
   sales           Sale[]
+  assignedUsers   UserLocation[]
+  invitations     UserInvitation[]
 
   @@map("locations")
 }
@@ -104,9 +107,12 @@ model User {
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  sales           Sale[]
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  sales             Sale[]
   passwordResetTokens PasswordResetToken[]
+  assignedLocations UserLocation[]   @relation("UserAssignments")
+  madeAssignments   UserLocation[]   @relation("MadeAssignments")
+  sentInvitations   UserInvitation[] @relation("InvitationsMade")
 
   @@map("users")
 }
@@ -243,4 +249,39 @@ model StockMovement {
   product        Product      @relation(fields: [productId], references: [id])
 
   @@map("stock_movements")
+}
+
+model UserLocation {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  locationId String   @map("location_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz()
+  assignedBy String   @map("assigned_by") @db.Uuid
+
+  user     User     @relation("UserAssignments", fields: [userId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+  assigner User     @relation("MadeAssignments", fields: [assignedBy], references: [id])
+
+  @@unique([userId, locationId])
+  @@map("user_locations")
+}
+
+model UserInvitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  locationId     String?   @map("location_id") @db.Uuid
+  email          String    @db.VarChar(255)
+  role           UserRole  @default(CASHIER)
+  tokenHash      String    @map("token_hash") @db.Text
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz()
+  acceptedAt     DateTime? @map("accepted_at") @db.Timestamptz()
+  invitedBy      String    @map("invited_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  location       Location?    @relation(fields: [locationId], references: [id])
+  inviter        User         @relation("InvitationsMade", fields: [invitedBy], references: [id])
+
+  @@unique([organizationId, email])
+  @@map("user_invitations")
 }
