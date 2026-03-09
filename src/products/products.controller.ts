@@ -9,10 +9,14 @@ import {
   Query,
   Request,
   UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { AddBundleComponentDto } from './dto/add-bundle-component.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -25,51 +29,124 @@ export class ProductsController {
 
   @Get()
   @Roles(Role.CASHIER)
-  findAll(
+  async findAll(
     @Request() req: any,
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('parentOnly') parentOnly?: string,
+    @Query('brandId') brandId?: string,
+    @Query('supplierId') supplierId?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '50',
   ) {
-    return this.productsService.findAll(
+    const result = await this.productsService.findAll(
       req.user.organizationId,
       search,
       categoryId,
+      parentOnly === 'true',
+      brandId,
+      supplierId,
       parseInt(page),
       parseInt(limit),
     );
+    return { message: 'Products retrieved successfully', ...result };
   }
 
   @Get(':id')
   @Roles(Role.CASHIER)
-  findOne(@Param('id') id: string, @Request() req: any) {
-    return this.productsService.findOne(id, req.user.organizationId);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: any,
+  ) {
+    const data = await this.productsService.findOne(id, req.user.organizationId);
+    return { message: 'Product retrieved successfully', data };
   }
 
   @Post()
   @Roles(Role.MANAGER)
-  create(@Body() dto: CreateProductDto, @Request() req: any) {
-    return this.productsService.create(
-      req.user.organizationId,
-      dto,
-      req.user.plan,
-    );
+  async create(@Body() dto: CreateProductDto, @Request() req: any) {
+    const data = await this.productsService.create(req.user.organizationId, dto);
+    return { message: 'Product created successfully', data };
   }
 
   @Patch(':id')
   @Roles(Role.MANAGER)
-  update(
-    @Param('id') id: string,
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProductDto,
     @Request() req: any,
   ) {
-    return this.productsService.update(id, req.user.organizationId, dto);
+    const data = await this.productsService.update(
+      id,
+      req.user.organizationId,
+      req.user.sub,
+      dto,
+    );
+    return { message: 'Product updated successfully', data };
   }
 
   @Delete(':id')
   @Roles(Role.MANAGER)
-  remove(@Param('id') id: string, @Request() req: any) {
-    return this.productsService.softDelete(id, req.user.organizationId);
+  @HttpCode(HttpStatus.OK)
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: any,
+  ) {
+    await this.productsService.softDelete(id, req.user.organizationId);
+    return { message: 'Product deleted successfully', data: null };
+  }
+
+  @Get(':id/variants')
+  @Roles(Role.CASHIER)
+  async findVariants(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: any,
+  ) {
+    const data = await this.productsService.findVariants(id, req.user.organizationId);
+    return { message: 'Variants retrieved successfully', data };
+  }
+
+  @Get(':id/bundle-components')
+  @Roles(Role.CASHIER)
+  async findBundleComponents(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: any,
+  ) {
+    const data = await this.productsService.findBundleComponents(
+      id,
+      req.user.organizationId,
+    );
+    return { message: 'Bundle components retrieved successfully', data };
+  }
+
+  @Post(':id/bundle-components')
+  @Roles(Role.MANAGER)
+  async addBundleComponent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddBundleComponentDto,
+    @Request() req: any,
+  ) {
+    const data = await this.productsService.addBundleComponent(
+      id,
+      req.user.organizationId,
+      dto,
+    );
+    return { message: 'Bundle component added successfully', data };
+  }
+
+  @Delete(':id/bundle-components/:componentId')
+  @Roles(Role.MANAGER)
+  @HttpCode(HttpStatus.OK)
+  async removeBundleComponent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('componentId', ParseUUIDPipe) componentId: string,
+    @Request() req: any,
+  ) {
+    await this.productsService.removeBundleComponent(
+      id,
+      req.user.organizationId,
+      componentId,
+    );
+    return { message: 'Bundle component removed successfully', data: null };
   }
 }

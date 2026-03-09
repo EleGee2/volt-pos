@@ -11,6 +11,8 @@ import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { LocationsModule } from './locations/locations.module';
 import { InvitationsModule } from './invitations/invitations.module';
+import { BrandsModule } from './brands/brands.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { InvitationsModule } from './invitations/invitations.module';
     CategoriesModule,
     LocationsModule,
     InvitationsModule,
+    BrandsModule,
+    SuppliersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
