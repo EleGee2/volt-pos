@@ -69,11 +69,21 @@ model Organization {
 }
 
 model Location {
-  id              String   @id @default(uuid()) @db.Uuid
-  organizationId  String   @map("organization_id") @db.Uuid
-  name            String   @db.VarChar(255)
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  id                    String   @id @default(uuid()) @db.Uuid
+  organizationId        String   @map("organization_id") @db.Uuid
+  name                  String   @db.VarChar(255)
+  logoUrl               String?  @db.Text @map("logo_url")
+  phone                 String?  @db.VarChar(30)
+  email                 String?  @db.VarChar(255)
+  addressStreet         String?  @db.VarChar(255) @map("address_street")
+  addressCity           String?  @db.VarChar(100) @map("address_city")
+  addressState          String?  @db.VarChar(100) @map("address_state")
+  addressCountry        String?  @db.VarChar(100) @map("address_country")
+  addressPostalCode     String?  @db.VarChar(20) @map("address_postal_code")
+  taxRegistrationNumber String?  @db.VarChar(100) @map("tax_registration_number")
+  currencyCode          String   @default("USD") @db.VarChar(3) @map("currency_code")
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   organization    Organization     @relation(fields: [organizationId], references: [id])
   inventoryLevels InventoryLevel[]
